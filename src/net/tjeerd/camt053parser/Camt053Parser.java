@@ -1,14 +1,15 @@
 package net.tjeerd.camt053parser;
 
-import net.tjeerd.camt053parser.model.*;
-
-import javax.xml.bind.*;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
-import java.util.HashSet;
-import java.util.List;
-import java.util.stream.Collectors;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
+
+import net.tjeerd.camt053parser.model.Document;
+import net.tjeerd.camt053parser.model.ObjectFactory;
 
 public class Camt053Parser {
 
