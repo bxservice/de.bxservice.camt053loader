@@ -33,9 +33,12 @@ import java.sql.Timestamp;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.impexp.BankStatementLoaderInterface;
 import org.compiere.model.MBankStatementLoader;
+import org.compiere.util.CLogger;
 
 import net.tjeerd.camt053parser.Camt053Parser;
 import net.tjeerd.camt053parser.model.AccountStatement2;
+import net.tjeerd.camt053parser.model.BalanceType12Code;
+import net.tjeerd.camt053parser.model.CashBalance3;
 import net.tjeerd.camt053parser.model.CreditDebitCode;
 import net.tjeerd.camt053parser.model.Document;
 import net.tjeerd.camt053parser.model.EntryDetails1;
@@ -48,6 +51,9 @@ public class CAMT053Loader implements BankStatementLoaderInterface {
 	private StringBuffer			m_errorMessage;
 	private StringBuffer			m_errorDescription;
 	private StatementLine			m_line;
+
+	/**	Static Logger	*/
+	private static CLogger	s_log	= CLogger.getCLogger (CAMT053Loader.class);
 
 	@Override
 	public boolean init(MBankStatementLoader bsl) {
@@ -75,6 +81,27 @@ public class CAMT053Loader implements BankStatementLoaderInterface {
 
             // Get all statements
             for (AccountStatement2 stmt : camt053Document.getBkToCstmrStmt().getStmt()) {
+            	Timestamp statementDate = null;
+            	if (stmt.getFrToDt() != null) {
+            		statementDate = new Timestamp(stmt.getFrToDt().getToDtTm().toGregorianCalendar().getTimeInMillis());
+            	}
+            	if (statementDate == null) {
+            		// try to get the statement date from the opening balance
+            		for (CashBalance3 bal : stmt.getBal()) {
+            			if (BalanceType12Code.OPBD.equals(bal.getTp().getCdOrPrtry().getCd())) {
+            				if (bal.getDt() != null) {
+            					if (bal.getDt().getDt() != null) {
+            						statementDate = new Timestamp(bal.getDt().getDt().toGregorianCalendar().getTimeInMillis());
+            					} else if (bal.getDt().getDtTm() != null) {
+            						statementDate = new Timestamp(bal.getDt().getDtTm().toGregorianCalendar().getTimeInMillis());
+            					}
+            				}
+            			}
+            		}
+            	}
+            	if (statementDate == null) {
+            		s_log.warning("No statement date found");
+            	}
                 // Get entries
                 for (ReportEntry2 ntry : stmt.getNtry()) {
                     // Get entry details
@@ -84,7 +111,7 @@ public class CAMT053Loader implements BankStatementLoaderInterface {
                     		m_line = new StatementLine();
                     		// from statement
                         	m_line.statementReference = stmt.getId();
-                        	m_line.statementDate = new Timestamp(stmt.getFrToDt().getToDtTm().toGregorianCalendar().getTimeInMillis());
+                        	m_line.statementDate = statementDate;
                         	m_line.iban = stmt.getAcct().getId().getIBAN();
                         	// from entry
                         	m_line.trxType = ntry.getCdtDbtInd().name(); // DBIT | CRDT
