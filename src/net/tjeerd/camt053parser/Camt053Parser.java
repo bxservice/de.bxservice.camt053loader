@@ -24,7 +24,8 @@ public class Camt053Parser {
         JAXBContext jc = JAXBContext.newInstance(ObjectFactory.class);
 
         Unmarshaller unmarshaller = jc.createUnmarshaller();
-        Document camt053Document = ((JAXBElement<Document>) unmarshaller.unmarshal(inputStream)).getValue();
+        @SuppressWarnings("unchecked")
+		Document camt053Document = ((JAXBElement<Document>) unmarshaller.unmarshal(inputStream)).getValue();
 
         Marshaller marshaller = jc.createMarshaller();
         marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
